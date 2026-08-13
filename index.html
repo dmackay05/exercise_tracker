@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="apple-mobile-web-app-capable" content="yes"/>
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+<meta name="apple-mobile-web-app-title" content="Move"/>
+<meta name="theme-color" content="#0d0d1a"/>
+<link rel="manifest" href="manifest.webmanifest"/>
+<link rel="apple-touch-icon" href="icon-192.png"/>
+<link rel="icon" href="icon-192.png"/>
+<title>Move — Exercise &amp; Yoga</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@400;500;700;900&family=DM+Mono:wght@400;700&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="styles.css?v=1">
+<style>
+  .exercise-card{background:#15151f;border:1px solid #23232f;border-radius:14px;padding:14px;margin-bottom:12px}
+  .set-dot.done{background:var(--accent,#cfe84f)!important;border-color:var(--accent,#cfe84f)!important;color:#0f0f0f!important}
+  .set-complete-msg.show{display:block!important}
+  .bs{background:#1a1a2e;border:1px solid #2a2a45;border-radius:8px;color:#ccc;font-size:12px;padding:6px 10px;cursor:pointer}
+  #mv-toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#222;color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .2s;z-index:999}
+  #mv-toast.show{opacity:1}
+  .mv-settings-row{margin-bottom:10px}
+  .mv-settings-row label{display:block;font-size:11px;color:#888;margin-bottom:4px}
+  .mv-settings-row input{width:100%;background:#1a1a2e;border:1px solid #2a2a45;border-radius:8px;padding:9px 10px;color:#f0f0f0;font-size:13px}
+</style>
+</head>
+<body>
+
+<div id="sync-banner">Syncing with Google Sheets…</div>
+
+<div class="app">
+  <div class="header">
+    <div class="header-top">
+      <div>
+        <div class="greeting" id="greeting">Move</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="hname" id="hname">Exercise &amp; Yoga</div>
+          <button onclick="openSettings()" title="Settings" style="background:transparent;border:none;color:#5eead4;font-size:17px;cursor:pointer;padding:0 2px;line-height:1">⚙</button>
+        </div>
+      </div>
+      <div class="date-nav">
+        <div class="date-nav-row">
+          <div class="date-label" id="date-str">Today</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab-btn active" data-tab="today" onclick="switchTab('today')"><span class="tab-icon">▶</span>Today</button>
+    <button class="tab-btn" data-tab="yoga" onclick="switchTab('yoga')"><span class="tab-icon">🧘</span>Yoga</button>
+    <button class="tab-btn" data-tab="dash" onclick="switchTab('dash')"><span class="tab-icon">◈</span>Progress</button>
+  </div>
+
+  <div class="content">
+
+    <!-- ════════ TODAY ════════ -->
+    <div class="panel active" id="panel-today">
+      <div class="card" style="margin-bottom:12px">
+        <div id="today-title" style="font-size:20px;font-weight:800">—</div>
+        <div id="today-sub" style="font-size:12px;color:#888;margin-top:2px">—</div>
+      </div>
+      <div id="today-moves"></div>
+    </div>
+
+    <!-- ════════ YOGA ════════ -->
+    <div class="panel" id="panel-yoga">
+      <div class="card" style="padding:0;overflow:hidden">
+        <div style="padding:14px 16px 10px;display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:24px;font-weight:300;color:#f0ede8;letter-spacing:-0.5px">Yoga Guide</div>
+            <div style="font-size:9px;color:#c9a96e;letter-spacing:3px;text-transform:uppercase;margin-top:2px">Your Practice</div>
+          </div>
+          <div class="routine-pill" onclick="yogaSwitchTab('routine')" style="cursor:pointer">
+            <div><div class="rp-count" id="rp-count">0</div><div class="rp-lbl">Routine</div></div>
+            <div style="font-size:18px">🧘</div>
+          </div>
+        </div>
+        <div class="yoga-stats-bar" id="yoga-stats-bar"></div>
+        <div class="yg-inner-tabbar">
+          <button class="yg-tab-btn active" data-ytab="presets">Presets</button>
+          <button class="yg-tab-btn" data-ytab="poses">Poses</button>
+          <button class="yg-tab-btn" data-ytab="routine">My Routine</button>
+          <button class="yg-tab-btn" data-ytab="saved">Saved</button>
+        </div>
+        <div class="yg-panel" id="yg-panel-poses">
+          <div class="search-area">
+            <div class="search-wrap">
+              <span class="s-icon">🔍</span>
+              <input type="text" id="pose-search" placeholder="Search poses, benefits, categories..." oninput="renderPoses()"/>
+            </div>
+            <div class="filters" id="filter-bar">
+              <button class="fbtn active" onclick="setFilter('all',this)">All</button>
+              <button class="fbtn" onclick="setFilter('beginner',this)">Beginner</button>
+              <button class="fbtn" onclick="setFilter('intermediate',this)">Intermediate</button>
+              <button class="fbtn" onclick="setFilter('advanced',this)">Advanced</button>
+              <button class="fbtn" onclick="setFilter('standing',this)">Standing</button>
+              <button class="fbtn" onclick="setFilter('seated',this)">Seated</button>
+              <button class="fbtn" onclick="setFilter('balance',this)">Balance</button>
+              <button class="fbtn" onclick="setFilter('core',this)">Core</button>
+              <button class="fbtn" onclick="setFilter('twist',this)">Twists</button>
+              <button class="fbtn" onclick="setFilter('inversion',this)">Inversions</button>
+              <button class="fbtn" onclick="setFilter('backbend',this)">Backbends</button>
+              <button class="fbtn" onclick="setFilter('restorative',this)">Restorative</button>
+            </div>
+          </div>
+          <div id="poses-container"></div>
+        </div>
+        <div class="yg-panel active" id="yg-panel-presets">
+          <div style="padding:14px 16px 8px">
+            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-weight:300;margin-bottom:4px;color:#f0ede8">Preset Routines</div>
+            <div style="font-size:10px;color:#888">Tap Load to fill your routine instantly. Calories calculated for your weight.</div>
+          </div>
+          <div class="presets-grid" id="presets-grid"></div>
+        </div>
+        <div class="yg-panel" id="yg-panel-routine">
+          <div id="r-empty" class="r-empty">
+            <span class="r-empty-icon">🌱</span>
+            Tap <strong>Poses</strong> to build a custom flow,<br>or load a <strong>Preset</strong> to start from a template.
+          </div>
+          <div id="r-content" style="display:none">
+            <div class="r-header">
+              <div class="r-title">My Routine</div>
+              <button class="clear-btn" onclick="clearRoutine()">Clear All</button>
+            </div>
+            <div class="cal-sum">
+              <span id="r-cal-total">0</span> kcal · <span id="r-pose-count">0</span> poses
+            </div>
+            <div id="r-list"></div>
+            <div class="start-wrap">
+              <button class="start-btn" onclick="ygStartSession()">▶ Begin Practice</button>
+            </div>
+            <div style="padding:10px 20px 0">
+              <div style="display:flex;gap:8px">
+                <input type="text" id="routine-name" placeholder="Name this routine..." style="flex:1;margin-bottom:0;background:#1a1a28;border:1px solid #ffffff1a;border-radius:10px;padding:10px 14px;color:#f0ede8;font-size:13px;font-family:'DM Mono',monospace;outline:none;-webkit-appearance:none"/>
+                <button onclick="saveRoutine()" style="background:#7fb09a22;border:1px solid #7fb09a44;border-radius:10px;padding:10px 16px;color:#a8d4c2;font-size:10px;cursor:pointer;font-family:'DM Mono',monospace;letter-spacing:1px;text-transform:uppercase;white-space:nowrap">Save ✦</button>
+              </div>
+              <div id="save-msg" style="font-size:10px;color:#7fb09a;font-family:'DM Mono',monospace;text-align:center;margin-top:8px;min-height:14px"></div>
+            </div>
+          </div>
+        </div>
+        <div class="yg-panel" id="yg-panel-saved">
+          <div style="padding:14px 16px 8px">
+            <div style="font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-weight:300;margin-bottom:4px;color:#f0ede8">Saved Routines</div>
+            <div style="font-size:10px;color:#888">Your custom routines. Tap Load to restore any routine.</div>
+          </div>
+          <div id="saved-list" style="padding:8px 16px;display:flex;flex-direction:column;gap:10px">
+            <div style="text-align:center;padding:40px 0;color:#555;font-size:12px;font-family:'DM Mono',monospace" id="saved-empty">No saved routines yet.<br><br>Build a routine and tap Save.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════ PROGRESS / DASHBOARD ════════ -->
+    <div class="panel" id="panel-dash">
+      <div class="card">
+        <div class="card-title" style="margin-bottom:10px">📈 Streak &amp; History</div>
+        <div id="mv-dash"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- ════════ SETTINGS ════════ -->
+<div class="modal-bg" id="settings-modal" style="display:none">
+  <div class="modal-card">
+    <div class="card-title" style="margin-bottom:12px">Settings</div>
+    <div class="mv-settings-row">
+      <label>Current weight (lbs) — used to scale built-in calorie estimates</label>
+      <input type="number" id="mv-weight-input" step="0.1"/>
+    </div>
+    <div class="mv-settings-row">
+      <label>Age (for HR zones, optional)</label>
+      <input type="number" id="mv-age-input"/>
+    </div>
+    <div class="mv-settings-row">
+      <label>Max HR (blank = estimate from age)</label>
+      <input type="number" id="mv-maxhr-input"/>
+    </div>
+    <div class="mv-settings-row">
+      <label>Google Apps Script URL (optional — for cross-device sync)</label>
+      <input type="text" id="eg-url" placeholder="https://script.google.com/macros/s/…/exec"/>
+    </div>
+    <div id="eg-sync-status" style="font-size:10px;color:#5eead4;text-align:center;margin:4px 0 10px;min-height:14px"></div>
+    <div style="display:flex;gap:8px">
+      <button class="bs" style="flex:1" onclick="egPushNow()">↻ Sync Now</button>
+      <button class="bs" style="flex:1" onclick="saveSettings()">Save</button>
+    </div>
+    <button class="bs" style="width:100%;margin-top:8px" onclick="closeSettings()">Close</button>
+  </div>
+</div>
+
+<div id="mv-toast"></div>
+
+<script>
+function openSettings(){
+  document.getElementById("mv-weight-input").value = CURRENT_WEIGHT || "";
+  document.getElementById("mv-age-input").value = USER_AGE || "";
+  document.getElementById("mv-maxhr-input").value = USER_MAXHR || "";
+  document.getElementById("eg-url").value = SHEETS_URL || "";
+  document.getElementById("settings-modal").style.display = "flex";
+}
+function closeSettings(){ document.getElementById("settings-modal").style.display = "none"; }
+function saveSettings(){
+  CURRENT_WEIGHT = parseFloat(document.getElementById("mv-weight-input").value) || CURRENT_WEIGHT;
+  USER_AGE = parseInt(document.getElementById("mv-age-input").value) || 0;
+  USER_MAXHR = parseInt(document.getElementById("mv-maxhr-input").value) || 0;
+  SHEETS_URL = document.getElementById("eg-url").value.trim();
+  store.set("mv_weight", CURRENT_WEIGHT);
+  store.set("mv_age", USER_AGE);
+  store.set("mv_maxhr", USER_MAXHR);
+  store.set("mv_sheets_url", SHEETS_URL);
+  toast("Settings saved");
+  closeSettings();
+  renderToday();
+}
+function switchTab(id){
+  document.querySelectorAll(".tab-btn").forEach(function(b){b.classList.remove("active");});
+  document.querySelectorAll(".panel").forEach(function(p){p.classList.remove("active");});
+  var btn=document.querySelector('[data-tab="'+id+'"]'), panel=document.getElementById("panel-"+id);
+  if(btn) btn.classList.add("active"); if(panel) panel.classList.add("active");
+  if(id==="yoga" && typeof renderPoses==="function") renderPoses();
+  if(id==="today" && typeof renderToday==="function") renderToday();
+  if(id==="dash" && typeof egRenderDash==="function") egRenderDash();
+  document.querySelector(".content").scrollTop=0;
+}
+function updateDateStr(){
+  var el=document.getElementById("date-str");
+  if(el) el.textContent = new Date().toLocaleDateString("en-US",{weekday:"long",month:"short",day:"numeric"});
+}
+document.addEventListener("DOMContentLoaded", function(){
+  updateDateStr();
+  if(typeof renderToday==="function") renderToday();
+  if(typeof renderPresets==="function") renderPresets();
+  if(typeof renderSaved==="function") renderSaved();
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('service-worker.js').catch(function(){});
+  }
+});
+</script>
+
+<script src="app.js?v=1"></script>
+</body>
+</html>
